@@ -1,0 +1,50 @@
+# ===============================
+# Node.js common
+# ===============================
+node_modules/
+npm-debug.log*
+yarn-error.log
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+.DS_Store
+*.log
+*.bak
+*.tmp
+
+# ===============================
+# Environment files
+# ===============================
+.env
+.env.local
+.env.*.local
+
+# ===============================
+# Frontend (Next.js) specific
+# ===============================
+frontend-next/next-app/.next/
+frontend-next/next-app/out/
+frontend-next/next-app/.turbo/
+frontend-next/next-app/.vercel/
+frontend-next/next-app/vercel.json
+
+# ===============================
+# Backend (NestJS) specific
+# ===============================
+backend-nest/nest-app/dist/
+backend-nest/nest-app/.nestjs/
+backend-nest/nest-app/.cache/
+backend-nest/nest-app/coverage/
+backend-nest/nest-app/.env
+backend-nest/nest-app/.env.*.local
+
+# ===============================
+# IDE & OS files
+# ===============================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
