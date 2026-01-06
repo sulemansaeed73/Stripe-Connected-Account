@@ -187,7 +187,7 @@ export default function PaymentForm(props: PaymentFormProps) {
     return (
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
         <p className="text-red-800 dark:text-red-300 text-sm">
-          Stripe publishable key is not set. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your .env.local file.
+          Stripe publishable key is not set. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your local env file.
         </p>
       </div>
     );
