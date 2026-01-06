@@ -1,12 +1,28 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // load .env globally
+    ConfigModule.forRoot({ isGlobal: true }),
+
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres',
+        host: config.get<string>('DB_HOST'),
+        port: Number(config.get('DB_PORT')),
+        username: config.get<string>('DB_USERNAME'),
+        password: config.get<string>('DB_PASSWORD'),
+        database: config.get<string>('DB_NAME'),
+        autoLoadEntities: true,
+        synchronize: true,
+      }),
+    }),
     PaymentsModule,
   ],
   controllers: [AppController],

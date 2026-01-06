@@ -33,10 +33,9 @@ export class PaymentsController {
   }
 
   @Get('/connected-accounts')
-async getConnectedAccounts() {
-  return this.paymentsService.listConnectedAccounts();
-}
-
+  async getConnectedAccounts() {
+    return this.paymentsService.listConnectedAccounts();
+  }
 
   // Route to list transactions
   @Get()
@@ -44,4 +43,3 @@ async getConnectedAccounts() {
     return this.paymentsService.listPayments(limit ? Number(limit) : undefined);
   }
 }
-    
