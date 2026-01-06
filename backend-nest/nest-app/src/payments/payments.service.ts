@@ -1,11 +1,17 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import Stripe from 'stripe';
+import { ConnectedAccount } from './payments.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
 
-  constructor() {
+  constructor(
+    @InjectRepository(ConnectedAccount)
+    private readonly connectedAccountRepo: Repository<ConnectedAccount>,
+  ) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
       throw new Error('STRIPE_SECRET_KEY environment variable is not set');
@@ -15,24 +21,28 @@ export class PaymentsService {
     });
   }
 
-
   async listConnectedAccounts() {
-    const accounts = await this.stripe.accounts.list({
-      limit: 100,
-    });
-  
-    return accounts.data.map(acc => ({
+    const accounts = await this.stripe.accounts.list({ limit: 100 });
+
+    const mappedAccounts = accounts.data.map((acc) => ({
       accountId: acc.id,
-      type: acc.type, // standard | express | custom
+      type: acc.type,
       country: acc.country,
       email: acc.email,
       chargesEnabled: acc.charges_enabled,
       payoutsEnabled: acc.payouts_enabled,
       detailsSubmitted: acc.details_submitted,
-      created: acc.created,
+      stripeCreatedAt: acc.created,
     }));
+
+    for (const account of mappedAccounts) {
+      await this.connectedAccountRepo.upsert(account, ['accountId']);
+    }
+
+    return this.connectedAccountRepo.find({
+      order: { stripeCreatedAt: 'DESC' },
+    });
   }
-  
 
   // Create PaymentIntent and route funds to connected account
   async createPayment(
@@ -63,7 +73,9 @@ export class PaymentsService {
       });
 
       // Confirm the PaymentIntent with the payment method
-      const confirmedPaymentIntent = await this.stripe.paymentIntents.confirm(paymentIntent.id);
+      const confirmedPaymentIntent = await this.stripe.paymentIntents.confirm(
+        paymentIntent.id,
+      );
 
       // Fetch charges separately since PaymentIntent doesn't include charges directly
       const charges = await this.stripe.charges.list({
@@ -77,15 +89,18 @@ export class PaymentsService {
         currency: confirmedPaymentIntent.currency,
         customer: confirmedPaymentIntent.customer,
         connectedAccount: connectedAccountId,
-        charges: charges.data.map(charge => ({
+        charges: charges.data.map((charge) => ({
           chargeId: charge.id,
           amount: charge.amount,
-          fee: typeof charge.balance_transaction === 'object' && charge.balance_transaction ? charge.balance_transaction.fee : 0,
+          fee:
+            typeof charge.balance_transaction === 'object' &&
+            charge.balance_transaction
+              ? charge.balance_transaction.fee
+              : 0,
           paymentMethod: charge.payment_method,
           receiptUrl: charge.receipt_url,
         })),
       };
-      
     } catch (error) {
       console.error('Stripe Payment Error:', error);
       throw error;
@@ -112,7 +127,7 @@ export class PaymentsService {
   // List last 50 transactions
   async listPayments(limit = 50) {
     const paymentIntents = await this.stripe.paymentIntents.list({ limit });
-    return paymentIntents.data.map(pi => ({
+    return paymentIntents.data.map((pi) => ({
       id: pi.id,
       amount: pi.amount,
       currency: pi.currency,
