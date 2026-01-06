@@ -60,7 +60,6 @@ function PaymentFormInner({
 
     checkDarkMode();
     
-    // Watch for theme changes
     const observer = new MutationObserver(checkDarkMode);
     if (typeof window !== 'undefined') {
       observer.observe(document.documentElement, {
