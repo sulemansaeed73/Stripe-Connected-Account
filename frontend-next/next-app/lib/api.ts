@@ -1,6 +1,6 @@
 // API utility functions for fetching transaction data
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export interface Transaction {
   id: string;
@@ -34,18 +34,33 @@ export interface CreatePaymentResponse {
   }>;
 }
 
-export async function fetchTransactions(limit?: number): Promise<Transaction[]> {
+export interface ConnectedAccount {
+  id: string;
+  accountId: string;
+  type: string;
+  country: string;
+  email: string | null;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  stripeCreatedAt: number;
+  createdAt: Date;
+}
+
+export async function fetchTransactions(
+  limit?: number
+): Promise<Transaction[]> {
   try {
-    const url = limit 
+    const url = limit
       ? `${API_BASE_URL}/payments?limit=${limit}`
       : `${API_BASE_URL}/payments`;
-    
+
     const response = await fetch(url, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'no-store', // Always fetch fresh data
+      cache: "no-store", // Always fetch fresh data
     });
 
     if (!response.ok) {
@@ -55,29 +70,34 @@ export async function fetchTransactions(limit?: number): Promise<Transaction[]> 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    console.error("Error fetching transactions:", error);
     throw error;
   }
 }
 
-export async function createCustomer(email: string, name?: string): Promise<Customer> {
+export async function createCustomer(
+  email: string,
+  name?: string
+): Promise<Customer> {
   try {
     const response = await fetch(`${API_BASE_URL}/payments/customer`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, name }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to create customer: ${response.statusText}`);
+      throw new Error(
+        errorData.message || `Failed to create customer: ${response.statusText}`
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error creating customer:', error);
+    console.error("Error creating customer:", error);
     throw error;
   }
 }
@@ -91,9 +111,9 @@ export async function createPayment(
 ): Promise<CreatePaymentResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/payments`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         amount,
@@ -106,13 +126,38 @@ export async function createPayment(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to create payment: ${response.statusText}`);
+      throw new Error(
+        errorData.message || `Failed to create payment: ${response.statusText}`
+      );
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error creating payment:', error);
+    console.error("Error creating payment:", error);
     throw error;
   }
 }
 
+export async function fetchConnectedAccounts(): Promise<ConnectedAccount[]> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/payments/connected-accounts`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch connected accounts: ${response.statusText}`
+      );
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching connected accounts:", error);
+    throw error;
+  }
+}
