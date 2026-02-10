@@ -36,7 +36,7 @@ export default function TransactionPage() {
     ConnectedAccount[]
   >([]);
   const [connectedAccountId, setConnectedAccountId] = useState("");
-  const [amount] = useState(50); // Fixed at $50 as requested
+  const [amount, setAmount] = useState(""); // Fixed at $50 as requested
   const [currency] = useState("usd");
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
@@ -65,7 +65,7 @@ export default function TransactionPage() {
     }
   };
 
-  const handlePaymentSuccess = (paymentIntentId: string, status: string) => {
+  const handlePaymentSuccess = (paymentIntentId: string, status: string) => { 
     setSuccess(
       `Payment created successfully! Payment Intent ID: ${paymentIntentId}. Status: ${status}`
     );
@@ -108,6 +108,7 @@ export default function TransactionPage() {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-center">
+
             <div className="flex items-center">
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
@@ -138,8 +139,11 @@ export default function TransactionPage() {
                 Create Customer
               </div>
             </div>
+
             <div className="w-24 h-0.5 mx-4 bg-gray-300 dark:bg-gray-600"></div>
+
             <div className="flex items-center">
+              
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                   step === "payment"
@@ -173,6 +177,7 @@ export default function TransactionPage() {
                 Create Payment
               </div>
             </div>
+
           </div>
         </div>
 
@@ -329,9 +334,14 @@ export default function TransactionPage() {
                   <input
                     type="text"
                     id="amount"
-                    value={`${amount}.00`}
-                    disabled
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    onBlur={() => {
+                      if (amount && !amount.includes(".")) {
+                        setAmount(`${amount}.00`);
+                      }
+                    }}
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
                   />
                 </div>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -356,7 +366,7 @@ export default function TransactionPage() {
                   <option value="">Select a connected account</option>
                   {connectedAccounts.map((acc) => (
                     <option key={acc.accountId} value={acc.accountId}>
-                      {acc.accountId} — {acc.email || "No email"}
+                      {acc.accountId} — {acc.accountName || "No email"}
                     </option>
                   ))}
                 </select>
@@ -373,7 +383,7 @@ export default function TransactionPage() {
                     Card Details (Test Mode)
                   </h3>
                   <PaymentForm
-                    amount={amount}
+                    amount={Number(amount)}
                     currency={currency}
                     customerId={customerId}
                     connectedAccountId={connectedAccountId}

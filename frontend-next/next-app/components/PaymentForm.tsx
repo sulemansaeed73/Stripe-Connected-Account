@@ -146,7 +146,7 @@ function PaymentFormInner({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Card Details <span className="text-red-500">*</span>
+          Card Details <span  className="text-red-500">*</span>
         </label>
         <div className="px-4 py-3 border-2 border-gray-300 dark:border-gray-500 rounded-lg bg-white dark:bg-gray-800 focus-within:border-blue-500 dark:focus-within:border-blue-400 transition-colors">
           <CardElement key={isDarkMode ? 'dark' : 'light'} options={cardElementOptions} />

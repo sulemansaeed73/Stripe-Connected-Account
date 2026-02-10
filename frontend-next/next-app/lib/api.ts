@@ -4,12 +4,13 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export interface Transaction {
   id: string;
+  accountName: string;
   amount: number;
   currency: string;
   status: string;
   customer: string | null;
   connectedAccount: string | null;
-  created: number;
+  stripeCreatedAt: number;
 }
 
 export interface Customer {
@@ -37,6 +38,7 @@ export interface CreatePaymentResponse {
 export interface ConnectedAccount {
   id: string;
   accountId: string;
+  accountName: string;
   type: string;
   country: string;
   email: string | null;

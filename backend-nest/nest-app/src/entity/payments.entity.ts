@@ -15,6 +15,13 @@ export class ConnectedAccount {
   @Column({ type: 'varchar', length: 255 })
   accountId: string;
 
+  @Column({
+    type: 'enum',
+    enum: ['FR-trial-Acc', 'FR-recurr-Acc'],
+    default: 'FR-trial-Acc',
+  })
+  accountName: 'FR-trial-Acc' | 'FR-recurr-Account';
+
   @Column({ type: 'varchar', length: 50 })
   type: string; // standard | express | custom
 

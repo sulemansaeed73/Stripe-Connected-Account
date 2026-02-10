@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Stripe from 'stripe';
-import { ConnectedAccount } from './payments.entity';
+import { ConnectedAccount } from '../entity/payments.entity';
 import { Repository } from 'typeorm';
+import { Payment } from '../entity/all-transaction-entity';
 
 @Injectable()
 export class PaymentsService {
@@ -11,6 +12,9 @@ export class PaymentsService {
   constructor(
     @InjectRepository(ConnectedAccount)
     private readonly connectedAccountRepo: Repository<ConnectedAccount>,
+
+    @InjectRepository(Payment)
+    private readonly paymentRepo: Repository<Payment>,
   ) {
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!stripeSecretKey) {
@@ -23,6 +27,7 @@ export class PaymentsService {
 
   async listConnectedAccounts() {
     const accounts = await this.stripe.accounts.list({ limit: 100 });
+    console.log('Accounts', accounts);
 
     const mappedAccounts = accounts.data.map((acc) => ({
       accountId: acc.id,
@@ -52,14 +57,23 @@ export class PaymentsService {
     connectedAccountId: string,
     paymentMethodId: string,
   ) {
+    console.log('--- createPayment START ---');
+    console.log('Input Params:', {
+      amount,
+      currency,
+      customerId,
+      connectedAccountId,
+      paymentMethodId,
+    });
+
     try {
-      // Attach the payment method to the customer
-      // The payment method is already created securely on the frontend using Stripe.js
+      console.log('Attaching payment method to customer...');
       await this.stripe.paymentMethods.attach(paymentMethodId, {
         customer: customerId,
       });
+      console.log('Payment method attached successfully');
 
-      // Create PaymentIntent without confirming first
+      console.log('Creating PaymentIntent...');
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount,
         currency,
@@ -72,36 +86,68 @@ export class PaymentsService {
         description: 'Payment routed to connected account',
       });
 
-      // Confirm the PaymentIntent with the payment method
+      console.log('PaymentIntent created:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount,
+      });
+
+      console.log('Confirming PaymentIntent...');
       const confirmedPaymentIntent = await this.stripe.paymentIntents.confirm(
         paymentIntent.id,
       );
 
-      // Fetch charges separately since PaymentIntent doesn't include charges directly
+      console.log('PaymentIntent confirmed:', {
+        id: confirmedPaymentIntent.id,
+        status: confirmedPaymentIntent.status,
+      });
+
+      console.log('Fetching charges for PaymentIntent...');
       const charges = await this.stripe.charges.list({
         payment_intent: confirmedPaymentIntent.id,
       });
 
-      return {
+      console.log('Charges fetched:', charges.data.length);
+
+      const mappedCharges = charges.data.map((charge) => {
+        const fee =
+          typeof charge.balance_transaction === 'object' &&
+          charge.balance_transaction
+            ? charge.balance_transaction.fee
+            : 0;
+
+        console.log('Processing charge:', {
+          chargeId: charge.id,
+          amount: charge.amount,
+          fee,
+          paymentMethod: charge.payment_method,
+        });
+
+        return {
+          chargeId: charge.id,
+          amount: charge.amount,
+          fee,
+          paymentMethod: charge.payment_method,
+          receiptUrl: charge.receipt_url,
+        };
+      });
+
+      const response = {
         paymentIntentId: confirmedPaymentIntent.id,
         status: confirmedPaymentIntent.status,
         amount: confirmedPaymentIntent.amount,
         currency: confirmedPaymentIntent.currency,
         customer: confirmedPaymentIntent.customer,
         connectedAccount: connectedAccountId,
-        charges: charges.data.map((charge) => ({
-          chargeId: charge.id,
-          amount: charge.amount,
-          fee:
-            typeof charge.balance_transaction === 'object' &&
-            charge.balance_transaction
-              ? charge.balance_transaction.fee
-              : 0,
-          paymentMethod: charge.payment_method,
-          receiptUrl: charge.receipt_url,
-        })),
+        charges: mappedCharges,
       };
+
+      console.log('Final response payload:', response);
+      console.log('--- createPayment SUCCESS ---');
+
+      return response;
     } catch (error) {
+      console.error('--- createPayment ERROR ---');
       console.error('Stripe Payment Error:', error);
       throw error;
     }
@@ -127,14 +173,32 @@ export class PaymentsService {
   // List last 50 transactions
   async listPayments(limit = 50) {
     const paymentIntents = await this.stripe.paymentIntents.list({ limit });
-    return paymentIntents.data.map((pi) => ({
-      id: pi.id,
-      amount: pi.amount,
-      currency: pi.currency,
-      status: pi.status,
-      customer: pi.customer,
-      connectedAccount: pi.transfer_data?.destination || null,
-      created: pi.created,
-    }));
+    console.log('paymentIntents', paymentIntents);
+
+    const mappedPayments: Partial<Payment>[] = paymentIntents.data.map(
+      (pi) => ({
+        paymentIntentId: pi.id,
+
+        // REQUIRED FIELD (this fixes the issue)
+        accountName: pi.amount === 0 ? 'FR-trial-Acc' : 'FR-recurr-Acc',
+
+        amount: pi.amount ?? 0,
+        currency: pi.currency ?? 'usd',
+        status: pi.status,
+        customer: typeof pi.customer === 'string' ? pi.customer : null,
+        connectedAccount:
+          typeof pi.transfer_data?.destination === 'string'
+            ? pi.transfer_data.destination
+            : null,
+        stripeCreatedAt: pi.created,
+      }),
+    );
+
+    await this.paymentRepo.upsert(mappedPayments, ['paymentIntentId']);
+
+    return this.paymentRepo.find({
+      order: { stripeCreatedAt: 'DESC' },
+      take: limit,
+    });
   }
 }

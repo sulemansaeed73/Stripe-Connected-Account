@@ -63,6 +63,8 @@ export default function Dashboard() {
     }
   }, [activeTab]);
 
+  const connecedAccountsLength = connectedAccounts.length;
+
   //Filter transactions based on active tab
   const filteredTransactions =
     activeTab === "transferred"
@@ -72,7 +74,7 @@ export default function Dashboard() {
   // Calculate statistics for filtered transactions
   const totalTransactions = filteredTransactions.length;
   const totalAmount = filteredTransactions.reduce(
-    (sum, t) => sum + t.amount,
+    (sum, t) => sum + Number(t.amount),
     0
   );
   const succeededCount = filteredTransactions.filter(
@@ -120,7 +122,6 @@ export default function Dashboard() {
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 Transaction Dashboard
@@ -181,14 +182,12 @@ export default function Dashboard() {
                 {loading ? "Loading..." : "Refresh"}
               </button>
             </div>
-
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         {error && (
           <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <div className="flex items-center gap-2">
@@ -299,24 +298,37 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Transactions Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <div>
+                {" "}
+                {/* Transactions Table */}
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {activeTab === "transferred"
                     ? "Transferred Transactions"
+                    : activeTab === "connected-accounts"
+                    ? "Connected Accounts"
                     : "All Transactions"}
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Showing {filteredTransactions.length} transaction
-                  {filteredTransactions.length !== 1 ? "s" : ""}
+                  {activeTab === "all" &&
+                    `Showing ${filteredTransactions.length} transaction${
+                      filteredTransactions.length > 1 ? "s" : ""
+                    }`}
                   {activeTab === "all" && transferredCount > 0 && (
                     <span className="ml-1">
                       ({transferredCount} transferred)
                     </span>
                   )}
+                  {activeTab === "transferred" &&
+                    `Showing ${transferredCount} transaction${
+                      transferredCount > 1 ? "s" : ""
+                    }`}
+                  {activeTab === "connected-accounts" &&
+                    `Showing ${connecedAccountsLength} account${
+                      transferredCount > 1 ? "s" : ""
+                    }`}
                 </p>
               </div>
             </div>
