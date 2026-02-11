@@ -22,7 +22,7 @@ export class PaymentsController {
     @Body('customerId') customerId: string,
     @Body('connectedAccountId') connectedAccountId: string,
     @Body('paymentMethodId') paymentMethodId: string,
-  ) {
+  ) { 
     return this.paymentsService.createPayment(
       amount,
       currency,

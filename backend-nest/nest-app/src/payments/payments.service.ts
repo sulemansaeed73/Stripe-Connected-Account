@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import Stripe from 'stripe';
 import { ConnectedAccount } from '../entity/payments.entity';
 import { Repository } from 'typeorm';
-import { Payment } from '../entity/all-transaction-entity';
+import { Payment } from '../entity/all-transaction.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -27,7 +27,7 @@ export class PaymentsService {
 
   async listConnectedAccounts() {
     const accounts = await this.stripe.accounts.list({ limit: 100 });
-    console.log('Accounts', accounts);
+    // console.log('Accounts', accounts);
 
     const mappedAccounts = accounts.data.map((acc) => ({
       accountId: acc.id,
@@ -112,7 +112,7 @@ export class PaymentsService {
       const mappedCharges = charges.data.map((charge) => {
         const fee =
           typeof charge.balance_transaction === 'object' &&
-          charge.balance_transaction
+            charge.balance_transaction
             ? charge.balance_transaction.fee
             : 0;
 
@@ -171,7 +171,7 @@ export class PaymentsService {
     }
   }
   // List last 50 transactions
-  async listPayments(limit = 50) {
+  async listPayments(limit = 70) {
     const paymentIntents = await this.stripe.paymentIntents.list({ limit });
     console.log('paymentIntents', paymentIntents);
 
